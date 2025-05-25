@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lumira Combined</title>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div id="welcome-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b1d3a; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 9999;">
+  <h1 style="color: white; font-family: 'Comfortaa', cursive; font-size: 3em; text-shadow: 0 0 8px #7BD3EA, 0 0 16px #A1EEBD;">🌙 Welcome to Lumira</h1>
+  <p style="color: white; font-family: 'Comfortaa', cursive; font-size: 1.2em; text-shadow: 0 0 8px #7BD3EA;">Your magical space for moods, memories & moments ✨</p>
+  <input id="password" type="password" placeholder="Enter your password" style="padding: 10px; font-size: 1em; border-radius: 10px; border: none; width: 200px; margin: 10px; text-align: center; background: #1a2e4f; color: white; box-shadow: 0 0 10px #7BD3EA;">
+  <input id="nameInput" type="text" placeholder="Enter your name" style="padding: 10px; font-size: 1em; border-radius: 10px; border: none; width: 200px; margin: 10px; text-align: center; background: #1a2e4f; color: white; box-shadow: 0 0 10px #A1EEBD; display: none;">
+  <button id="setBtn" style="margin: 10px; padding: 10px 20px; border-radius: 20px; font-size: 1em; background-color: #A1EEBD; color: #0b1d3a; border: none; cursor: pointer;">Set Password</button>
+  <button id="enterBtn" style="margin: 10px; padding: 10px 20px; border-radius: 20px; font-size: 1em; background-color: #A1EEBD; color: #0b1d3a; border: none; cursor: pointer;">Enter Lumira</button>
+  <div id="loading" style="display: none; font-size: 1.5em; margin-top: 20px; color: #7BD3EA; text-shadow: 0 0 20px #A1EEBD;">✨ Loading your magic... ✨</div>
+</div>
+
+<div id="main-app" style="display:none;">
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mood Tracker</title>
+  <!-- Google Fonts for fallback font (Indie Flower) -->
+  <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+  <style>
+    /* Base styles with animated pastel background */
+    body {
+      background: linear-gradient(45deg, #ffcccb, #add8e6, #e6e6fa, #98fb98);
+      background-size: 400%;
+      animation: pastelShift 10s ease-in-out infinite;
+      font-family: "Coffee Healing", "Indie Flower", sans-serif;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+      transition: all 0.5s ease;
+    }
+    @keyframes pastelShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* Dark mode styles */
+    body.dark-mode {
+      background: #333;
+      animation: none;
+      color: #fff;
+    }
+    body.dark-mode .emoji-button, body.dark-mode nav a, body.dark-mode textarea, body.dark-mode input, body.dark-mode button, body.dark-mode select, body.dark-mode .calendar-day, body.dark-mode .happy-entry {
+      background: #555;
+      color: #fff;
+    }
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode a, body.dark-mode p {
+      color: #fff;
+    }
+    /* Header */
+    header {
+      text-align: center;
+      position: relative;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin: 0 0 20px;
+    }
+    /* Dark mode toggle */
+    #dark-mode-toggle {
+      font-size: 1.5em;
+      background: none;
+      border: none;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-family: "Coffee Healing", "Indie Flower", sans-serif;
+    }
+    /* Navigation (Tabs) */
+    nav {
+      margin-bottom: 30px;
+    }
+    nav ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    nav a {
+      text-decoration: none;
+      color: #333;
+      background: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: background 0.3s, color 0.3s;
+    }
+    nav a:hover {
+      background: #f0f0f0;
+    }
+    nav a.active {
+      background: #e0e0e0;
+      font-weight: bold;
+    }
+    /* Tab content */
+    .tab-content {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    /* Mood Mirror */
+    #mood-mirror h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr); /* 4x6 grid */
+      gap: 15px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .emoji-button {
+      font-size: 2em;
+      border: none;
+      background: #fff;
+      border-radius: 10px;
+      padding: 15px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease-in-out;
+    }
+    .message-box {
+      margin-top: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+    /* Emoji animations (faster durations) */
+    .animate-happy { animation: happyBounce 1s ease-in-out; }
+    @keyframes happyBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    .animate-sad { animation: sadSway 1.5s ease-in-out; }
+    @keyframes sadSway {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(15px); }
+    }
+    .animate-angry { animation: angryShake 0.2s linear; }
+    @keyframes angryShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animate-sleepy { animation: sleepyBlink 1.5s ease-in-out; }
+    @keyframes sleepyBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .animate-cool { animation: coolTilt 2s ease-in-out; }
+    @keyframes coolTilt {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(10deg); }
+    }
+    .animate-shocked { animation: shockedZoom 0.75s ease-in-out; }
+    @keyframes shockedZoom {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+    .animate-nauseous { animation: nauseousSpin 2s linear; }
+    @keyframes nauseousSpin {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(15deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .animate-party { animation: partyPop 1s ease-in-out; }
+    @keyframes partyPop {
+      0%, 100% { transform: scale(1) rotate(0); }
+      50% { transform: scale(1.3) rotate(20deg); }
+    }
+    .animate-innocent { animation: haloGlow 1.5s ease-in-out; }
+    @keyframes haloGlow {
+      0%, 100% { text-shadow: 0 0 5px #fff; }
+      50% { text-shadow: 0 0 15px #fff; }
+    }
+    .animate-thinking { animation: thinkingTilt 1.5s ease-in-out; }
+    @keyframes thinkingTilt {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(-15deg); }
+    }
+    .animate-pleading { animation: pleadingPulse 1.25s ease-in-out; }
+    @keyframes pleadingPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .animate-starstruck { animation: starTwinkle 1s ease-in-out; }
+    @keyframes starTwinkle {
+      0%, 100% { text-shadow: 0 0 5px gold; }
+      50% { text-shadow: 0 0 15px gold; }
+    }
+    .animate-confused { animation: confusedShake 1.25s ease-in-out; }
+    @keyframes confusedShake {
+      0%, 100% { transform: translateX(0); }
+      25%, 75% { transform: translateX(7px); }
+      50% { transform: translateX(-7px); }
+    }
+    .animate-relaxed { animation: relaxedSway 2s ease-in-out; }
+    @keyframes relaxedSway {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(10deg); }
+    }
+    .animate-playful { animation: playfulBounce 0.9s ease-in-out; }
+    @keyframes playfulBounce {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-25px) rotate(-10deg); }
+    }
+    .animate-disappointed { animation: disappointedDrop 1.25s ease-in-out; }
+    @keyframes disappointedDrop {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+    .animate-frustrated { animation: frustratedSteam 0.5s ease-in-out; }
+    @keyframes frustratedSteam {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.5) saturate(2); }
+    }
+    .animate-delighted { animation: delightedBounce 1s ease-in-out; }
+    @keyframes delightedBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+    .animate-nerdy { animation: nerdyNod 1.5s ease-in-out; }
+    @keyframes nerdyNod {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(15deg); }
+    }
+    .animate-adventurous { animation: adventurousSwing 1.5s ease-in-out; }
+    @keyframes adventurousSwing {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(-20deg); }
+    }
+    .animate-secretive { animation: secretiveBlink 2s ease-in-out; }
+    @keyframes secretiveBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-dizzy { animation: dizzySpin 1s linear; }
+    @keyframes dizzySpin {
+      0% { transform: rotate(0); }
+      100% { transform: rotate(360deg); }
+    }
+    .animate-hugging { animation: huggingPulse 1.5s ease-in-out; }
+    @keyframes huggingPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .animate-love { animation: lovePulse 1s ease-in-out; }
+    @keyframes lovePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+    /* Calendar styles */
+    #mood-calendar h2 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+    }
+    .calendar-controls {
+      margin-bottom: 20px;
+    }
+    select {
+      font-family: "Coffee Healing", "Indie Flower", sans-serif;
+      padding: 5px;
+      border-radius: 5px;
+      border: none;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin: 0 5px;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .calendar-header {
+      font-weight: bold;
+      padding: 10px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .calendar-day {
+      padding: 10px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+    }
+    .calendar-day.empty {
+      background: #f0f0f0;
+      box-shadow: none;
+    }
+    /* Journal and Happy Things styles */
+    h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+    textarea, input {
+      font-family: "Coffee Healing", "Indie Flower", sans-serif;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      margin: 5px;
+    }
+    textarea {
+      height: 100px;
+      resize: none;
+    }
+    button {
+      font-family: "Coffee Healing", "Indie Flower", sans-serif;
+      padding: 8px 15px;
+      border: none;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: background 0.3s;
+      margin: 5px;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+    #happy-list {
+      margin-top: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .happy-entry {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 5px 0;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .happy-entry button {
+      padding: 5px 10px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="dark-mode-toggle">🌓</button>
+    <h1>Mood Tracker</h1>
+    <nav>
+      <ul>
+        <li><a href="#mood-mirror" class="tab-link active">Mood Mirror</a></li>
+        <li><a href="#mood-calendar" class="tab-link">Mood Calendar</a></li>
+        <li><a href="#journal" class="tab-link">Journal</a></li>
+        <li><a href="#happy-things" class="tab-link">things that make me happy</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section id="mood-mirror" class="tab-content active">
+      <h2>How are you feeling today?</h2>
+      <div class="emoji-grid">
+        <span><button class="emoji-button" data-animation="happy">😀</button></span>
+        <span><button class="emoji-button" data-animation="sad">😢</button></span>
+        <span><button class="emoji-button" data-animation="angry">😡</button></span>
+        <span><button class="emoji-button" data-animation="sleepy">😴</button></span>
+        <span><button class="emoji-button" data-animation="cool">😎</button></span>
+        <span><button class="emoji-button" data-animation="shocked">😱</button></span>
+        <span><button class="emoji-button" data-animation="nauseous">🤢</button></span>
+        <span><button class="emoji-button" data-animation="party">🥳</button></span>
+        <span><button class="emoji-button" data-animation="innocent">😇</button></span>
+        <span><button class="emoji-button" data-animation="thinking">🤔</button></span>
+        <span><button class="emoji-button" data-animation="pleading">🥺</button></span>
+        <span><button class="emoji-button" data-animation="starstruck">🤩</button></span>
+        <span><button class="emoji-button" data-animation="confused">😕</button></span>
+        <span><button class="emoji-button" data-animation="relaxed">😌</button></span>
+        <span><button class="emoji-button" data-animation="playful">😜</button></span>
+        <span><button class="emoji-button" data-animation="disappointed">😞</button></span>
+        <span><button class="emoji-button" data-animation="frustrated">😤</button></span>
+        <span><button class="emoji-button" data-animation="delighted">😋</button></span>
+        <span><button class="emoji-button" data-animation="nerdy">🤓</button></span>
+        <span><button class="emoji-button" data-animation="adventurous">🤠</button></span>
+        <span><button class="emoji-button" data-animation="secretive">🤐</button></span>
+        <span><button class="emoji-button" data-animation="dizzy">😵</button></span>
+        <span><button class="emoji-button" data-animation="hugging">🤗</button></span>
+        <span><button class="emoji-button" data-animation="love">❤️</button></span>
+      </div>
+      <div id="emoji-message" class="message-box" style="display: none;">
+        <p id="emoji-message-text"></p>
+      </div>
+    </section>
+
+    <section id="mood-calendar" class="tab-content">
+      <h2>Mood Calendar</h2>
+      <div class="calendar-controls">
+        <select id="month-select">
+          <option value="0">January</option>
+          <option value="1">February</option>
+          <option value="2">March</option>
+          <option value="3">April</option>
+          <option value="4" selected>May</option>
+          <option value="5">June</option>
+          <option value="6">July</option>
+          <option value="7">August</option>
+          <option value="8">September</option>
+          <option value="9">October</option>
+          <option value="10">November</option>
+          <option value="11">December</option>
+        </select>
+        <select id="year-select">
+          <option value="2020">2020</option>
+          <option value="2021">2021</option>
+          <option value="2022">2022</option>
+          <option value="2023">2023</option>
+          <option value="2024">2024</option>
+          <option value="2025" selected>2025</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+          <option value="2029">2029</option>
+          <option value="2030">2030</option>
+        </select>
+      </div>
+      <div class="calendar" id="calendar">
+        <!-- Calendar will be populated by JavaScript -->
+      </div>
+    </section>
+
+    <section id="journal" class="tab-content">
+      <h2>Journal</h2>
+      <div id="journal-password" style="display: block;">
+        <input type="password" id="journal-password-input" placeholder="Enter password">
+        <button id="journal-password-submit">Unlock</button>
+      </div>
+      <div id="journal-content" style="display: none;">
+        <input type="date" id="journal-date" value="2025-05-25">
+        <br>
+        <textarea id="journal-entry" rows="5" cols="50" placeholder="Write your thoughts..."></textarea>
+        <br>
+        <button id="change-password-btn">Change Password</button>
+        <div id="password-form" style="display: none;">
+          <input type="password" id="new-password" placeholder="New Password">
+          <input type="password" id="confirm-password" placeholder="Confirm Password">
+          <button type="button" id="update-password">Change Password</button>
+        </div>
+        <div>
+          <button id="save-entry">Save Entry</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="happy-things" class="tab-content">
+      <h2>Things That Make Me Happy 😊</h2>
+      <div>
+        <input type="text" id="happy-input" placeholder="Enter something that makes you happy">
+        <button id="add-happy">Add</button>
+      </div>
+      <div id="happy-list"></div>
+    </section>
+  </main>
+
+  <script>
+    // Dark mode toggle
+    const toggleButton = document.getElementById('dark-mode-toggle');
+    toggleButton.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+
+    // Tab switching
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        tabLinks.forEach(l => l.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        link.classList.add('active');
+        const targetId = link.getAttribute('href').substring(1);
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    // Function to get the day of the year
+    function getDayOfYear(date) {
+      const start = new Date(date.getFullYear(), 0, 0);
+      const diff = date - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      return Math.floor(diff / oneDay);
+    }
+
+    // Get the current day of the year (May 22, 2025)
+    const today = new Date(); // Month is 0-indexed in JS
+    const dayOfYear = getDayOfYear(today);
+    const messageIndex = dayOfYear % 350; // Cycle through 350 messages
+
+    // Variations for dynamic messages
+    const comfortingActions = [
+      "wrapping yourself in a soft blanket", "listening to a gentle song", "sipping some calming tea",
+      "watching the clouds drift by", "calling a dear friend", "taking a slow walk in nature",
+      "cuddling with a pet", "reading a comforting book", "lighting a scented candle",
+      "soaking in a warm bath", "writing down your feelings", "looking at old photos",
+      "breathing in some fresh air", "drawing or doodling", "listening to the rain",
+      "making a cup of hot cocoa", "stretching gently", "watching a favorite childhood movie",
+      "hugging a pillow", "closing your eyes for a quiet moment"
+    ];
+
+    const positiveActions = [
+      "sharing a laugh with a friend", "trying a new recipe", "dancing to your favorite song",
+      "going for a sunny walk", "starting a fun project", "calling someone you love",
+      "playing a game", "exploring a new place", "writing a kind note to someone",
+      "taking a fun photo", "learning something new", "organizing a small get-together",
+      "painting or crafting", "watching a comedy show", "planning a little adventure",
+      "singing out loud", "baking some cookies", "stargazing tonight",
+      "playing with a pet", "spreading some kindness"
+    ];
+
+    const affirmations = [
+      "I’m right here with you, always", "You’re so strong, and I’ve got you",
+      "You’re doing great, I believe in you", "You’re amazing, keep shining",
+      "I’m so proud of you", "You’ve got this, I’m cheering for you",
+      "You’re not alone, I’m here", "You’re enough, just as you are",
+      "I’m wrapping you in a big hug", "You’re so special to me"
+    ];
+
+    const secondaryEmojis = [
+      "🤗💖", "🌟🤗", "💖🌟", "🤗🌈", "💕🤗", "🌟💖", "🤗✨", "💖🌼", "🤗🌟", "💕🌈"
+    ];
+
+    // Emoji message templates
+    const emojiTemplates = {
+      '😀': {
+        template: "Hey, you’re glowing with happiness today! 😄 Your joy is so infectious—why not [ACTION] to keep the sunshine going? [AFFIRMATION]! [EMOJI]"
+      },
+      '😢': {
+        template: "Oh, sweetheart, I see those tears, and I’m holding space for you. 💧 It’s okay to feel this way—maybe try [ACTION] to soothe your heart? [AFFIRMATION]. [EMOJI]"
+      },
+      '😡': {
+        template: "I feel that heavy energy, and I’m here for you, okay? 🔥 Let’s ease that anger together—how about [ACTION] to find some calm? [AFFIRMATION]. [EMOJI]"
+      },
+      '😴': {
+        template: "Feeling so sleepy today, huh? 🛌 Let’s honor that—maybe [ACTION] to rest up? [AFFIRMATION]! [EMOJI]"
+      },
+      '😎': {
+        template: "You’re rocking that cool vibe today! 😎 Keep that energy—why not [ACTION] to shine even brighter? [AFFIRMATION]! [EMOJI]"
+      },
+      '😱': {
+        template: "Oh my, you’re feeling shocked! 😲 Let’s take a moment—how about [ACTION] to steady yourself? [AFFIRMATION]. [EMOJI]"
+      },
+      '🤢': {
+        template: "Oh no, you’re feeling unwell, aren’t you? 🤒 Let’s take care—maybe [ACTION] to feel a bit better? [AFFIRMATION]. [EMOJI]"
+      },
+      '🥳': {
+        template: "It’s a celebration today! 🎉 Your party spirit is amazing—why not [ACTION] to keep the fun going? [AFFIRMATION]! [EMOJI]"
+      },
+      '😇': {
+        template: "You’re feeling so kind and angelic today! 🕊️ Your warmth is beautiful—maybe [ACTION] to spread more love? [AFFIRMATION]! [EMOJI]"
+      },
+      '🤔': {
+        template: "Deep in thought today, I see! 🧠 Let’s sort those thoughts—how about [ACTION] to clear your mind? [AFFIRMATION]. [EMOJI]"
+      },
+      '🥺': {
+        template: "Oh, my dear, you’re feeling so tender, and I’m here with you. 🥰 Let’s find some comfort—maybe try [ACTION] to feel held? [AFFIRMATION]. [EMOJI]"
+      },
+      '🤩': {
+        template: "You’re absolutely starstruck today! ✨ That excitement is so fun—why not [ACTION] to keep the magic alive? [AFFIRMATION]! [EMOJI]"
+      },
+      '😕': {
+        template: "Feeling a bit confused, huh? 🤷‍♀️ Let’s figure it out—maybe [ACTION] to find some clarity? [AFFIRMATION]. [EMOJI]"
+      },
+      '😌': {
+        template: "You’re so calm and peaceful today! 🧘‍♀️ Let’s keep that serenity—how about [ACTION] to stay relaxed? [AFFIRMATION]! [EMOJI]"
+      },
+      '😜': {
+        template: "Oh, you’re feeling so playful today! 😄 Let’s keep the fun—why not [ACTION] to share some laughter? [AFFIRMATION]! [EMOJI]"
+      },
+      '😞': {
+        template: "I’m so sorry you’re feeling disappointed. 😔 Let’s find a little light—maybe [ACTION] to lift your spirits? [AFFIRMATION]. [EMOJI]"
+      },
+      '😤': {
+        template: "Frustration’s bubbling up, I see! 😅 Let’s ease it—how about [ACTION] to cool down? [AFFIRMATION]. [EMOJI]"
+      },
+      '😋': {
+        template: "You’re so delighted today—yum! 😋 Let’s savor it—why not [ACTION] to keep the joy? [AFFIRMATION]! [EMOJI]"
+      },
+      '🤓': {
+        template: "Feeling curious and nerdy today! 📚 Let’s feed that mind—how about [ACTION] to learn something new? [AFFIRMATION]! [EMOJI]"
+      },
+      '🤠': {
+        template: "Yee-haw, you’re feeling adventurous! 🏞️ Let’s explore—why not [ACTION] to fuel that spirit? [AFFIRMATION]! [EMOJI]"
+      },
+      '🤐': {
+        template: "Keeping things quiet today, huh? 🤫 That’s okay—maybe [ACTION] to reflect in peace? [AFFIRMATION]. [EMOJI]"
+      },
+      '😵': {
+        template: "Feeling a bit overwhelmed, I see! 🌀 Let’s slow down—how about [ACTION] to find your balance? [AFFIRMATION]. [EMOJI]"
+      },
+      '🤗': {
+        template: "You’re in such a hugging mood today! 🥰 Let’s share that warmth—why not [ACTION] to spread love? [AFFIRMATION]! [EMOJI]"
+      },
+      '❤️': {
+        template: "Your heart’s full of love today! 💕 Let’s share it—maybe [ACTION] to brighten someone’s day? [AFFIRMATION]! [EMOJI]"
+      }
+    };
+
+    // Function to generate a message for an emoji
+    function generateMessage(emoji, index) {
+      const template = emojiTemplates[emoji].template;
+      const actionIndex = index % (emoji === '😢' || emoji === '😡' || emoji === '🥺' ? comfortingActions.length : positiveActions.length);
+      const affirmationIndex = index % affirmations.length;
+      const emojiIndex = index % secondaryEmojis.length;
+
+      const action = (emoji === '😢' || emoji === '😡' || emoji === '🥺') ? comfortingActions[actionIndex] : positiveActions[actionIndex];
+      const affirmation = affirmations[affirmationIndex];
+      const secondaryEmoji = secondaryEmojis[emojiIndex];
+
+      return template.replace('[ACTION]', action).replace('[AFFIRMATION]', affirmation).replace('[EMOJI]', secondaryEmoji);
+    }
+
+    // Emoji click animations and mood tracking
+    const emojis = ['😀', '😢', '😡', '😴', '😎', '😱', '🤢', '🥳', '😇', '🤔', '🥺', '🤩', '😕', '😌', '😜', '😞', '😤', '😋', '🤓', '🤠', '🤐', '😵', '🤗', '❤️'];
+    const messageBox = document.getElementById('emoji-message');
+    const messageText = document.getElementById('emoji-message-text');
+    document.querySelectorAll('.emoji-button').forEach((button, index) => {
+      button.addEventListener('click', () => {
+        // Remove all possible animation classes
+        const animations = [
+          'happy', 'sad', 'angry', 'sleepy', 'cool', 'shocked', 'nauseous', 'party',
+          'innocent', 'thinking', 'pleading', 'starstruck', 'confused', 'relaxed',
+          'playful', 'disappointed', 'frustrated', 'delighted', 'nerdy', 'adventurous',
+          'secretive', 'dizzy', 'hugging', 'love'
+        ];
+        animations.forEach(anim => button.classList.remove(`animate-${anim}`));
+        // Get the animation type from data-animation attribute
+        const animation = button.getAttribute('data-animation');
+        // Apply the animation class
+        button.classList.add(`animate-${animation}`);
+        // Remove the animation class after it completes
+        const duration = getAnimationDuration(animation);
+        setTimeout(() => {
+          button.classList.remove(`animate-${animation}`);
+        }, duration);
+        // Save the selected mood for today (May 22, 2025)
+        const todayDate = new Date();
+const todayStr = todayDate.toISOString().split('T')[0];
+        localStorage.setItem(`mood_${todayStr}`, emojis[index]);
+        // Update the calendar if it's the current month
+        const currentMonth = parseInt(document.getElementById('month-select').value);
+        const currentYear = parseInt(document.getElementById('year-select').value);
+        if (currentMonth === 4 && currentYear === 2025) {
+          renderCalendar(currentYear, currentMonth);
+        }
+        // Show the personalized message
+        const emoji = emojis[index];
+        messageText.textContent = generateMessage(emoji, messageIndex);
+        messageBox.style.display = 'block';
+      });
+    });
+
+    // Function to get animation duration (in milliseconds, halved for faster animations)
+    function getAnimationDuration(animation) {
+      const durations = {
+        happy: 1000,
+        sad: 1500,
+        angry: 200,
+        sleepy: 1500,
+        cool: 2000,
+        shocked: 750,
+        nauseous: 2000,
+        party: 1000,
+        innocent: 1500,
+        thinking: 1500,
+        pleading: 1250,
+        starstruck: 1000,
+        confused: 1250,
+        relaxed: 2000,
+        playful: 900,
+        disappointed: 1250,
+        frustrated: 500,
+        delighted: 1000,
+        nerdy: 1500,
+        adventurous: 1500,
+        secretive: 2000,
+        dizzy: 1000,
+        hugging: 1500,
+        love: 1000
+      };
+      return durations[animation] || 1000;
+    }
+
+    // Calendar functionality
+    const monthSelect = document.getElementById('month-select');
+    const yearSelect = document.getElementById('year-select');
+    const calendar = document.getElementById('calendar');
+
+    function renderCalendar(year, month) {
+      calendar.innerHTML = '';
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      daysOfWeek.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.classList.add('calendar-header');
+        dayHeader.textContent = day;
+        calendar.appendChild(dayHeader);
+      });
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.classList.add('calendar-day', 'empty');
+        calendar.appendChild(emptyDay);
+      }
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.classList.add('calendar-day');
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const mood = localStorage.getItem(`mood_${dateStr}`);
+        dayDiv.textContent = day + (mood ? ` ${mood}` : '');
+        calendar.appendChild(dayDiv);
+      }
+    }
+
+    renderCalendar(2025, 4);
+    monthSelect.addEventListener('change', () => {
+      renderCalendar(parseInt(yearSelect.value), parseInt(monthSelect.value));
+    });
+    yearSelect.addEventListener('change', () => {
+      renderCalendar(parseInt(yearSelect.value), parseInt(monthSelect.value));
+    });
+
+    // Journal functionality (password protection, save, and edit entries)
+    let password = localStorage.getItem('journalPassword');
+    const journalPasswordDiv = document.getElementById('journal-password');
+    const journalContent = document.getElementById('journal-content');
+    const journalPasswordInput = document.getElementById('journal-password-input');
+    const journalPasswordSubmit = document.getElementById('journal-password-submit');
+    const journalDate = document.getElementById('journal-date');
+    const journalEntry = document.getElementById('journal-entry');
+    const saveEntryBtn = document.getElementById('save-entry');
+
+    journalPasswordSubmit.addEventListener('click', () => {
+      if (journalPasswordInput.value === password) {
+        journalPasswordDiv.style.display = 'none';
+        journalContent.style.display = 'block';
+        loadJournalEntry(journalDate.value);
+      } else {
+        alert('Incorrect password. Please try again.');
+      }
+    });
+
+    journalDate.addEventListener('change', () => {
+      loadJournalEntry(journalDate.value);
+    });
+
+    saveEntryBtn.addEventListener('click', () => {
+      const date = journalDate.value;
+      const entry = journalEntry.value.trim();
+      if (date) {
+        localStorage.setItem(`journal_${date}`, entry);
+        alert('Journal entry saved!');
+      } else {
+        alert('Please select a date.');
+      }
+    });
+
+    function loadJournalEntry(date) {
+      const entry = localStorage.getItem(`journal_${date}`);
+      journalEntry.value = entry || '';
+    }
+
+    const changePasswordBtn = document.getElementById('change-password-btn');
+    const passwordForm = document.getElementById('password-form');
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+    const updatePasswordBtn = document.getElementById('update-password');
+
+    changePasswordBtn.addEventListener('click', () => {
+      passwordForm.style.display = passwordForm.style.display === 'none' ? 'block' : 'none';
+    });
+
+    updatePasswordBtn.addEventListener('click', () => {
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      if (newPassword === confirmPassword && newPassword.length > 0) {
+        password = newPassword;
+        localStorage.setItem('journalPassword', password);
+        alert('Password updated successfully!');
+        passwordForm.style.display = 'none';
+        newPasswordInput.value = '';
+        confirmPasswordInput.value = '';
+        journalPasswordDiv.style.display = 'block';
+        journalContent.style.display = 'none';
+        journalPasswordInput.value = '';
+      } else {
+        alert('Passwords do not match or are empty. Please try again.');
+      }
+    });
+
+    // Things That Make Me Happy functionality
+    const happyInput = document.getElementById('happy-input');
+    const addHappyBtn = document.getElementById('add-happy');
+    const happyList = document.getElementById('happy-list');
+    
+    let happyEntries = JSON.parse(localStorage.getItem('happyEntries')) || [];
+    happyEntries.forEach((entry, index) => {
+      addHappyEntry(entry, index);
+    });
+
+    addHappyBtn.addEventListener('click', () => {
+      const entry = happyInput.value.trim();
+      if (entry) {
+        happyEntries.push(entry);
+        localStorage.setItem('happyEntries', JSON.stringify(happyEntries));
+        addHappyEntry(entry, happyEntries.length - 1);
+        happyInput.value = '';
+      }
+    });
+
+    function addHappyEntry(entry, index) {
+      const entryDiv = document.createElement('div');
+      entryDiv.classList.add('happy-entry');
+      entryDiv.innerHTML = `
+        <span>${entry}</span>
+        <button onclick="deleteHappyEntry(${index})">Delete</button>
+      `;
+      happyList.appendChild(entryDiv);
+    }
+
+    window.deleteHappyEntry = function(index) {
+      happyEntries.splice(index, 1);
+      localStorage.setItem('happyEntries', JSON.stringify(happyEntries));
+      happyList.innerHTML = '';
+      happyEntries.forEach((entry, i) => addHappyEntry(entry, i));
+    };
+  </script>
+</body>
+</html>
+</div>
+
+<script>
+  window.onload = function () {
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const setBtn = document.getElementById('setBtn');
+    const enterBtn = document.getElementById('enterBtn');
+    const passwordInput = document.getElementById('password');
+    const nameInput = document.getElementById('nameInput');
+    const loading = document.getElementById('loading');
+
+    if (localStorage.getItem('lumiraPassword')) {
+      setBtn.style.display = 'none';
+    }
+
+    setBtn.onclick = function () {
+      const pwd = passwordInput.value.trim();
+      if (pwd) {
+        localStorage.setItem('lumiraPassword', pwd);
+        alert('Password set successfully!');
+        setBtn.style.display = 'none';
+      } else {
+        alert('Please enter a password.');
+      }
+    };
+
+    enterBtn.onclick = function () {
+      const stored = localStorage.getItem('lumiraPassword');
+      const entered = passwordInput.value.trim();
+      if (!stored) {
+        alert('No password set. Please set one.');
+        return;
+      }
+      if (entered !== stored) {
+        alert('Incorrect password.');
+        return;
+      }
+
+      // Ask for name if not set
+      if (!localStorage.getItem('lumiraName')) {
+        nameInput.style.display = 'block';
+        if (!document.getElementById('confirmNameBtn')) {
+          const btn = document.createElement('button');
+          btn.textContent = 'Confirm Name';
+          btn.id = 'confirmNameBtn';
+          btn.style.margin = '10px';
+          btn.style.padding = '10px 20px';
+          btn.style.borderRadius = '20px';
+          btn.style.fontSize = '1em';
+          btn.style.backgroundColor = '#7BD3EA';
+          btn.style.color = '#0b1d3a';
+          btn.style.border = 'none';
+          btn.style.cursor = 'pointer';
+          btn.onclick = function () {
+            const name = nameInput.value.trim();
+            if (name) {
+              localStorage.setItem('lumiraName', name);
+              proceedToApp();
+            } else {
+              alert('Please enter your name.');
+            }
+          };
+          welcomeScreen.appendChild(btn);
+        }
+      } else {
+        proceedToApp();
+      }
+    };
+
+    function proceedToApp() {
+      loading.style.display = 'block';
+      setBtn.style.display = 'none';
+      enterBtn.style.display = 'none';
+      passwordInput.style.display = 'none';
+      nameInput.style.display = 'none';
+      const confirmBtn = document.getElementById('confirmNameBtn');
+      if (confirmBtn) confirmBtn.style.display = 'none';
+
+      setTimeout(() => {
+        welcomeScreen.style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+      }, 2500);
+    }
+  };
+</script>
+
+</body>
+</html>
